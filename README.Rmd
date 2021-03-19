@@ -158,11 +158,18 @@ str_capture(string, pattern = '"number":"{number}","street":"{street}".*?"coordi
 
 ## Simple Benchmark
 
+I acknowledge that this isn't the greatest benchmark, but it is relevant to my
+current use-case.
+
 * For large inputs (1000+ input strings), `fugly` is the fastest
 * For small inputs, `fugly` and `utils::strcapture` are about equivalent
-* `unglue` is the slowest of the 3 methods.
+* `unglue` is the slowest of the methods.
+* `ore` lies somewhere between `unglue` and `utils::strcapture`
 
 ```{r warning=FALSE, message=FALSE}
+
+# remotes::install_github("jonclayden/ore")
+library(ore)
 library(unglue)
 library(ggplot2)
 
@@ -174,6 +181,7 @@ res <- bench::mark(
   `unglue::unglue()` = unglue::unglue_data(string, "Information name:{name} age:{age=\\d+}"),
   `utils::strcapture()` = utils::strcapture("Information name:(.*?) age:(\\d+)", string, 
                     proto = data.frame(name=character(), age=character())),
+  `ore::ore_search()` = do.call(rbind.data.frame, lapply(ore_search(ore('name:(?<name>.*?) age:(?<age>\\d+)', encoding='utf8'), string, all=TRUE), function(x) {x$groups$matches}))
 )
 ```
 
