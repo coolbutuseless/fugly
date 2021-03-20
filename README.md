@@ -120,6 +120,9 @@ str_capture(string, pattern = '"number":"{number}","street":"{street}".*?"coordi
 I acknowledge that this isn’t the greatest benchmark, but it is relevant
 to my current use-case.
 
+-   [nc](https://github.com/tdhock/nc) with the PCRE regex engine is the
+    fastest named capture I could find in R.
+    -   However - I’m not a huge fan of its syntax
 -   For large inputs (1000+ input strings), `fugly` is significantly
     faster than `unglue`, `utils::strcapture` and \``ore`
 -   The rust regex engine
@@ -131,6 +134,7 @@ to my current use-case.
 ``` r
 # remotes::install_github("jonclayden/ore")
 # remotes::install_github("yutannihilation/rr4r")
+# remotes::install_github('qinwf/re2r') 
 library(ore)
 library(rr4r)
 library(unglue)
@@ -140,7 +144,6 @@ library(ggplot2)
 N <- 1000
 string <- paste0("Information name:greg age:", seq(N))
 
-
 res <- bench::mark(
   `fugly::str_capture()` = fugly::str_capture(string, "name:{name} age:{age=\\d+}"),
   `unglue::unglue()` = unglue::unglue_data(string, "Information name:{name} age:{age=\\d+}"),
@@ -148,6 +151,7 @@ res <- bench::mark(
                     proto = data.frame(name=character(), age=character())),
   `ore::ore_search()` = do.call(rbind.data.frame, lapply(ore_search(ore('name:(?<name>.*?) age:(?<age>\\d+)', encoding='utf8'), string, all=TRUE), function(x) {x$groups$matches})),
    `rr4r::rr4r_extract_groups()` = rr4r::rr4r_extract_groups(string, "name:(?P<name>.*?) age:(?P<age>\\d+)"),
+  `nc::capture_first_vec() PCRE` = nc::capture_first_vec(string, "Information name:", name=".*?", " age:", age="\\d+", engine = 'PCRE'),
   check = FALSE
 )
 ```
@@ -166,6 +170,7 @@ res <- bench::mark(
 -   [namedCapture](https://cran.r-project.org/web/packages/namedCapture/index.html)
     Note: I couldn’t get this to work sanely.
 -   [rr4f](https://github.com/yutannihilation/rr4r) rust regex engine
+-   [nc](https://github.com/tdhock/nc)
 
 ## Acknowledgements
 
