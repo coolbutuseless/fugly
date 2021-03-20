@@ -120,27 +120,35 @@ str_capture(string, pattern = '"number":"{number}","street":"{street}".*?"coordi
 I acknowledge that this isn’t the greatest benchmark, but it is relevant
 to my current use-case.
 
--   For large inputs (1000+ input strings), `fugly` is the fastest
--   For small inputs, `fugly` and `utils::strcapture` are about
-    equivalent
+-   For large inputs (1000+ input strings), `fugly` is significantly
+    faster than `unglue`, `utils::strcapture` and \``ore`
+-   The rust regex engine
+    [rr4r](https://github.com/yutannihilation/rr4r) is slightly faster
+    than `fugly`
 -   `unglue` is the slowest of the methods.
 -   `ore` lies somewhere between `unglue` and `utils::strcapture`
 
 ``` r
 # remotes::install_github("jonclayden/ore")
+# remotes::install_github("yutannihilation/rr4r")
 library(ore)
+library(rr4r)
 library(unglue)
 library(ggplot2)
 
 # meaningless strings for benchmarking
-string <- paste0("Information name:greg age:", 1:1000)
+N <- 1000
+string <- paste0("Information name:greg age:", seq(N))
+
 
 res <- bench::mark(
   `fugly::str_capture()` = fugly::str_capture(string, "name:{name} age:{age=\\d+}"),
   `unglue::unglue()` = unglue::unglue_data(string, "Information name:{name} age:{age=\\d+}"),
   `utils::strcapture()` = utils::strcapture("Information name:(.*?) age:(\\d+)", string, 
                     proto = data.frame(name=character(), age=character())),
-  `ore::ore_search()` = do.call(rbind.data.frame, lapply(ore_search(ore('name:(?<name>.*?) age:(?<age>\\d+)', encoding='utf8'), string, all=TRUE), function(x) {x$groups$matches}))
+  `ore::ore_search()` = do.call(rbind.data.frame, lapply(ore_search(ore('name:(?<name>.*?) age:(?<age>\\d+)', encoding='utf8'), string, all=TRUE), function(x) {x$groups$matches})),
+   `rr4r::rr4r_extract_groups()` = rr4r::rr4r_extract_groups(string, "name:(?P<name>.*?) age:(?P<age>\\d+)"),
+  check = FALSE
 )
 ```
 
@@ -153,6 +161,11 @@ res <- bench::mark(
 -   [stringr](https://cran.r-project.org/package=stringr)
 -   `utils::strcapture()`
 -   [unglue::unglue()](%5Bunglue%5D(https://cran.r-project.org/web/packages/unglue/index.html))
+-   [ore](https://github.com/jonclayden/ore), [ore on
+    CRAN](https://cran.r-project.org/package=ore)
+-   [namedCapture](https://cran.r-project.org/web/packages/namedCapture/index.html)
+    Note: I couldn’t get this to work sanely.
+-   [rr4f](https://github.com/yutannihilation/rr4r) rust regex engine
 
 ## Acknowledgements
 
