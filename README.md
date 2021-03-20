@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# fugly <img src="man/figures/logo.png" align="right" height=230/>
+# fugly <img src="man/figures/logo.png" align="right" height="230/"/>
 
 <!-- badges: start -->
 
@@ -10,35 +10,43 @@
 <!-- badges: end -->
 
 This package provides a single function (`str_capture`) for using named
-capture groups to extract values from strings. This function is just a
-wrapper around [stringr](https://cran.r-project.org/package=stringr).
+capture groups to extract values from strings. A key requirement for
+readability is that the names of the capture groups are specified inline
+as part of the regex, and not in an external vector or as separate
+names.
 
-`fugly::str_capture()` is very similar to both
-[unglue](https://cran.r-project.org/web/packages/unglue/index.html) and
-`utils::strcapture()`.
-
-This package was written because `stringr` doesn’t yet do named capture
-groups (See issues for
+`fugly::str_capture()` is implemented as a wrapper around
+[stringr](https://cran.r-project.org/package=stringr). This is because
+`stringr` itself does not yet do named capture groups (See issues for
 [stringr](https://github.com/tidyverse/stringr/issues/71) and
-[stringi](https://github.com/gagolews/stringi/issues/153)), and I needed
-something faster than
-[unglue](https://cran.r-project.org/web/packages/unglue/index.html)
+[stringi](https://github.com/gagolews/stringi/issues/153)).
 
-|                | fugly::str\_capture         | unglue:::unglue             | utils::strcapture                |
-|----------------|-----------------------------|-----------------------------|----------------------------------|
-| Speed          | fastest                     | slow                        | faster                           |
-| Naming Groups  | inline capture group naming | inline capture group naming | use of prototype to define names |
-| Safe + Robust? | dodgy                       | quite safe                  | quite safe                       |
+`fugly::str_capture()` is very similar to a number of existing packages.
+See table below for a comparison.
+
+| Method                      | Speed    | Inline capture group naming | robust |
+|-----------------------------|----------|-----------------------------|--------|
+| `fugly::str_capture`        | Fast     | Yes                         | No     |
+| `rr4r::rr4r_extract_groups` | Fast     | Yes                         | Yes    |
+| `nc::capture_first_vec`     | Fast     | No                          | Yes    |
+| `tidy::extract`             | Fast     | No                          | Yes    |
+| `utils::strcapture`         | Middling | No                          | Yes    |
+| `unglue::unglue`            | Slow     | Yes                         | Yes    |
+| `ore::ore_search`           | Slow     | Yes                         | Yes    |
 
 ### What do I mean when I say `fugly::str_capture()` is unsafe/dodgy/non-robust?
 
 -   It doesn’t adhere to standard regular expression syntax for named
     capture groups as used in perl, python etc.
+
 -   It doesn’t really adhere to `glue` syntax (although it looks similar
     at a surface level).
+
 -   If you specify delimiters which appear in your string input, then
     you’re going to have a bad time.
+
 -   It’s generally only been tested on data which is:
+
     -   highly structured
     -   only ASCII
     -   non-pathological
@@ -46,6 +54,7 @@ something faster than
 ### What’s in the box?
 
 -   `fugly::str_capture(string, pattern, delim)`
+
     -   capture named groups with regular expressions
     -   returns a data.frame with all columns containing character
         strings
@@ -122,14 +131,26 @@ to my current use-case.
 
 -   [nc](https://github.com/tdhock/nc) with the PCRE regex engine is the
     fastest named capture I could find in R.
+
     -   However - I’m not a huge fan of its syntax
+
 -   For large inputs (1000+ input strings), `fugly` is significantly
     faster than `unglue`, `utils::strcapture` and \``ore`
+
 -   The rust regex engine
     [rr4r](https://github.com/yutannihilation/rr4r) is slightly faster
     than `fugly`
+
 -   `unglue` is the slowest of the methods.
+
 -   `ore` lies somewhere between `unglue` and `utils::strcapture`
+
+-   As pointed out by [Michael
+    Barrowman](https://twitter.com/MyKo101AB), `tidyr::extract()` will
+    also do named capture into a data.frame.
+
+    -   Similar to `utils::strcapture()`, the names are not specified
+        inline with the regex, but are listed separately.
 
 ``` r
 # remotes::install_github("jonclayden/ore")
@@ -139,10 +160,12 @@ library(ore)
 library(rr4r)
 library(unglue)
 library(ggplot2)
+library(tidyr)
 
 # meaningless strings for benchmarking
 N <- 1000
 string <- paste0("Information name:greg age:", seq(N))
+
 
 res <- bench::mark(
   `fugly::str_capture()` = fugly::str_capture(string, "name:{name} age:{age=\\d+}"),
@@ -152,11 +175,10 @@ res <- bench::mark(
   `ore::ore_search()` = do.call(rbind.data.frame, lapply(ore_search(ore('name:(?<name>.*?) age:(?<age>\\d+)', encoding='utf8'), string, all=TRUE), function(x) {x$groups$matches})),
    `rr4r::rr4r_extract_groups()` = rr4r::rr4r_extract_groups(string, "name:(?P<name>.*?) age:(?P<age>\\d+)"),
   `nc::capture_first_vec() PCRE` = nc::capture_first_vec(string, "Information name:", name=".*?", " age:", age="\\d+", engine = 'PCRE'),
+  `tidyr::extract()` = tidyr::extract(data.frame(x = string), x, into = c('name', 'age'), regex = 'name:(.*?) age:(\\d+)'),
   check = FALSE
 )
 ```
-
-    #> Loading required namespace: tidyr
 
 <img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
 
