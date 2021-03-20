@@ -71,7 +71,7 @@ str_capture <- function(string, pattern, delim = c('{', '}')) {
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Run the regex and create a data.frame result
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  res <- stringr::str_match(string, final_pattern)[,-1L]
+  res <- stringr::str_match(string, final_pattern)[,-1L, drop = FALSE]
   res <- as.data.frame(res)
   names(res) <- capture_names
 
