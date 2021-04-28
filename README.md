@@ -161,6 +161,8 @@ library(rr4r)
 library(unglue)
 library(ggplot2)
 library(tidyr)
+library(rematch2)
+library(rex)
 
 # meaningless strings for benchmarking
 N <- 1000
@@ -176,7 +178,11 @@ res <- bench::mark(
    `rr4r::rr4r_extract_groups()` = rr4r::rr4r_extract_groups(string, "name:(?P<name>.*?) age:(?P<age>\\d+)"),
   `nc::capture_first_vec() PCRE` = nc::capture_first_vec(string, "Information name:", name=".*?", " age:", age="\\d+", engine = 'PCRE'),
   `tidyr::extract()` = tidyr::extract(data.frame(x = string), x, into = c('name', 'age'), regex = 'name:(.*?) age:(\\d+)'),
-  check = FALSE
+  `rematch2::re_match()` = rematch2::re_match(string, "name:(?<name>.*?) age:(?<age>\\d+)")[c(1, 2)],
+  `rex::re_matches()` = rex::re_matches(string, rex("name:", capture(name = "name", anything), " age:", capture(name = "age", digits))),
+  check = function(x, y) {
+    all.equal(as.data.frame(x), as.data.frame(y))
+  }
 )
 ```
 
@@ -193,6 +199,8 @@ res <- bench::mark(
     Note: I couldn’t get this to work sanely.
 -   [rr4f](https://github.com/yutannihilation/rr4r) rust regex engine
 -   [nc](https://github.com/tdhock/nc)
+-   [rematch2](https://github.com/r-lib/rematch2)
+-   [rex](https://github.com/kevinushey/rex)
 
 ## Acknowledgements
 
